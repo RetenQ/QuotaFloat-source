@@ -32,7 +32,17 @@ public partial class App : Application
             Ui.ApplyTheme();service=new MonitorService(Settings.Load());Widget=new WidgetWindow(service,this);MainWindow=Widget;Widget.Show();CreateTray();
             SystemEvents.UserPreferenceChanged+=ThemeChanged;SystemEvents.PowerModeChanged+=PowerChanged;SystemEvents.DisplaySettingsChanged+=DisplayChanged;
             DispatcherUnhandledException+=(_,args)=>{args.Handled=true;MessageBox.Show("操作未完成，请重试。若问题持续，可退出后重新打开额度浮窗。","额度浮窗");};
-            if(verify){await VerifyAsync(Path.GetFullPath(e.Args[1]));await ExitCoreAsync();}else service.Start();
+            if(verify){await VerifyAsync(Path.GetFullPath(e.Args[1]));await ExitCoreAsync();}
+            else
+            {
+                service.Start();
+                if(Settings.AutoStart)
+                {
+                    try { QuotaFloat.Startup.StartupRegistration.StartMonitor(Path.Combine(AppContext.BaseDirectory,"QuotaFloat.Launcher.exe")); }
+                    catch(Exception error) when(error is System.Runtime.InteropServices.COMException or UnauthorizedAccessException)
+                    { MessageBox.Show("启动联动未能注册，请在设置中重新启用启动开关。","额度浮窗"); }
+                }
+            }
         }
         catch(Exception ex)
         {

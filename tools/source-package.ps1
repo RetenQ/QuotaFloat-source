@@ -28,7 +28,7 @@ foreach ($directory in @('src','tests')) {
     }
 }
 
-$tools = @('build.ps1','package.ps1','source-package.ps1','Install.ps1','Install.cmd','Uninstall.ps1','Uninstall.cmd','make-icon.py','probe.py')
+$tools = @('build.ps1','package.ps1','source-package.ps1','test-startup.ps1','Install.ps1','Install.cmd','Uninstall.ps1','Uninstall.cmd','make-icon.py','probe.py')
 New-Item -ItemType Directory -Path (Join-Path $stage 'tools') -Force | Out-Null
 foreach ($name in $tools) {
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $stage 'tools')

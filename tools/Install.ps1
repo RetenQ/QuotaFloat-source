@@ -18,12 +18,28 @@ if ($InstallDir.TrimEnd('\') -eq $sourceDir.TrimEnd('\')) {
     throw 'Choose an install directory outside the extracted package.'
 }
 
+if (-not $SkipRegistration) {
+    $scheduler = New-Object -ComObject 'Schedule.Service'
+    $scheduler.Connect()
+    $taskName = 'QuotaFloat.Startup.' + [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    try {
+        $task = $scheduler.GetFolder('\').GetTask($taskName)
+        if ($task.Definition.Actions.Item(1).Path -ieq (Join-Path $InstallDir 'QuotaFloat.Launcher.exe')) {
+            $task.Enabled = $false
+            $task.Stop(0)
+        }
+    } catch {
+        if ($_.Exception.HResult -ne -2147024894) { throw }
+    }
+}
+
 # Stop only this application's processes from the selected installation path.
 Get-Process -Name 'QuotaFloat','QuotaFloat.Launcher' -ErrorAction SilentlyContinue | ForEach-Object {
     try {
         $runningPath = $_.MainModule.FileName
         if ($runningPath -and [IO.Path]::GetDirectoryName($runningPath).TrimEnd('\') -ieq $InstallDir.TrimEnd('\')) {
             Stop-Process -Id $_.Id -Force -ErrorAction Stop
+            if (-not $_.WaitForExit(10000)) { throw 'Application did not exit; try again.' }
         }
     } catch [System.ComponentModel.Win32Exception] { } catch [System.InvalidOperationException] { }
 }
@@ -38,9 +54,8 @@ if (-not (Test-Path -LiteralPath $installedWidget -PathType Leaf) -or -not (Test
 }
 
 if (-not $SkipRegistration) {
-    $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-    New-Item -Path $runKey -Force | Out-Null
-    New-ItemProperty -Path $runKey -Name 'QuotaFloat' -Value ('"' + $installedLauncher + '"') -PropertyType String -Force | Out-Null
+    $registration = Start-Process -FilePath $installedLauncher -ArgumentList '--register-startup' -WindowStyle Hidden -Wait -PassThru
+    if ($registration.ExitCode -ne 0) { throw 'Startup registration failed. See %LOCALAPPDATA%\QuotaFloat\launcher.log.' }
 
     $startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
     $shortcutPath = Join-Path $startMenu 'QuotaFloat.lnk'

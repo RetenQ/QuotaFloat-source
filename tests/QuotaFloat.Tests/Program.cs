@@ -4,6 +4,14 @@ using System.Text.Json;
 
 var passed=0;
 void Check(bool condition,string name){if(!condition)throw new Exception("FAIL "+name);Console.WriteLine("PASS "+name);passed++;}
+var reopen=new QuotaFloat.Startup.ReopenTracker();
+var original=new QuotaFloat.Startup.DesktopWindow(10,100,50);
+Check(reopen.Observe([original]) && !reopen.Observe([original]),"visible Codex session starts once without repeatedly restoring widget");
+Check(!reopen.Observe([]) && reopen.Observe([original]),"closing and reopening window restores widget even with same background process");
+Check(reopen.Observe([new(11,200,51)]),"rapid process replacement is detected without an empty polling interval");
+Check(reopen.Observe([new(11,300,51)]),"process id reuse starts a new session");
+Check(reopen.Observe([new(11,300,52)]),"new Codex window is detected with unchanged process");
+Check(!reopen.Observe([]) && !reopen.Observe([]),"no desktop windows does not relaunch widget on background helpers");
 JsonElement J(string text)=>JsonDocument.Parse(text).RootElement.Clone();
 var s=QuotaSnapshot.Parse("account","plus",J("""{"rateLimits":{"primary":{"usedPercent":99,"windowDurationMins":300,"resetsAt":2000000000}},"rateLimitsByLimitId":{"codex":{"primary":{"usedPercent":20,"windowDurationMins":10080,"resetsAt":2000000000},"secondary":{"usedPercent":35,"windowDurationMins":300,"resetsAt":1900000000}},"reserve":{"primary":{"usedPercent":90,"windowDurationMins":300,"resetsAt":1900000000}}}}"""));
 Check(s.FiveHour?.Remaining==65 && s.Week?.Remaining==80,"official bucket and duration mapping");

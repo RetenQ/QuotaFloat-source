@@ -11,6 +11,8 @@
 
 `src/QuotaFloat.Core` 负责 Codex app-server 协议与数据存储，`src/QuotaFloat` 是 WPF 界面，`src/QuotaFloat.Launcher` 负责 Windows 登录与 Codex 重新启动联动。测试位于 `tests/QuotaFloat.Tests`。
 
+启动联动的 Windows 集成验证：将 `tests/CodexWindowFixture/CodexWindowFixture.csproj` 发布到 `artifacts/OpenAI.Codex_Fixture`，然后运行 `powershell -NoProfile -ExecutionPolicy Bypass -File tools/test-startup.ps1`。该测试要求已安装并启用启动联动；使用临时测试窗口，重启悬浮窗，不关闭真实 Codex。
+
 ## 贡献约定
 
 - 提交前运行现有测试，并说明手工验证过的 Windows 行为。
